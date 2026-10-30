@@ -1,0 +1,17 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+
+# Dados locais dos serviços
+data/
+
+# Logs
+*.log
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
