@@ -1,0 +1,1027 @@
+{
+  "uid": "claude-code-compare",
+  "title": "Claude Code · Comparação de sessões",
+  "schemaVersion": 41,
+  "tags": [
+    "claude-code"
+  ],
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Projeto",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "hide": 0,
+        "query": {
+          "query": "label_values(claude_code_session_info, project_dir)",
+          "refId": "v",
+          "qryType": 1
+        },
+        "definition": "label_values(claude_code_session_info, project_dir)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": ".*"
+      },
+      {
+        "name": "session",
+        "label": "Sessões",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "hide": 0,
+        "query": {
+          "query": "claude_code_session_info{project_dir=~\"$project\"}",
+          "refId": "v",
+          "qryType": 3
+        },
+        "definition": "claude_code_session_info{project_dir=~\"$project\"}",
+        "refresh": 2,
+        "sort": 2,
+        "multi": true,
+        "current": {},
+        "regex": "/display=\"(?<text>[^\"]+)\".*session_id=\"(?<value>[^\"]+)\"/"
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "Telas",
+      "type": "dashboards",
+      "tags": [
+        "claude-code"
+      ],
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "barchart",
+      "title": "Custo estimado",
+      "description": "",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cost_usd [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "project_dir": true,
+              "started": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "Value #A": "Custo",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "Value #A": 1
+            }
+          }
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Sessão",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "fullHighlight": false,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "number"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "barchart",
+      "title": "Tokens por tipo",
+      "description": "",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap input_tokens [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap output_tokens [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cache_read_tokens [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cache_creation_tokens [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "project_dir": true,
+              "started": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "Value #A": "Input",
+              "Value #B": "Output",
+              "Value #C": "Cache lido",
+              "Value #D": "Cache criado",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4
+            }
+          }
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Sessão",
+        "stacking": "normal",
+        "showValue": "auto",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "fullHighlight": false,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Input"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Output"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cache lido"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cache criado"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Tempo de API",
+      "description": "Soma da duração das chamadas à API.",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap duration_ms [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "project_dir": true,
+              "started": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "Value #A": "Tempo de API",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "Value #A": 1
+            }
+          }
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Sessão",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "fullHighlight": false,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "number"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Tempo ativo",
+      "description": "Tempo em que a sessão esteve ativa, somando usuário e CLI.",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (session_id) (max_over_time(claude_code_active_time_seconds_total{session_id=~\"${session:regex}\"}[$__range]))",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "project_dir": true,
+              "started": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "Value #A": "Tempo ativo",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "Value #A": 1
+            }
+          }
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Sessão",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "fullHighlight": false,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "number"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Chamadas à API",
+      "description": "",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (count_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "project_dir": true,
+              "started": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "Value #A": "Chamadas",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "Value #A": 1
+            }
+          }
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Sessão",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "fullHighlight": false,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "number"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Resumo",
+      "description": "",
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cost_usd [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap input_tokens [$__range])) + sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap output_tokens [$__range])) + sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cache_read_tokens [$__range])) + sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap cache_creation_tokens [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (count_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (session_id) (sum_over_time({service_name=\"claude-code\"} | event_name=\"api_request\" | session_id=~\"${session:regex}\" | unwrap duration_ms [$__range]))",
+          "editorMode": "code",
+          "queryType": "instant"
+        },
+        {
+          "refId": "I",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "claude_code_session_info{session_id=~\"${session:regex}\"}",
+          "editorMode": "code",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "session_id": true,
+              "display": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "Value": true,
+              "Value #I": true
+            },
+            "renameByName": {
+              "title": "Sessão",
+              "project_dir": "Projeto",
+              "started": "Início",
+              "Value #A": "Custo",
+              "Value #B": "Tokens",
+              "Value #C": "Chamadas",
+              "Value #D": "Tempo de API",
+              "Value #I": "info"
+            },
+            "indexByName": {
+              "title": 0,
+              "project_dir": 1,
+              "started": 2,
+              "Value #A": 3,
+              "Value #B": 4,
+              "Value #C": 5,
+              "Value #D": 6
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "type": "include",
+            "match": "all",
+            "filters": [
+              {
+                "fieldName": "Custo",
+                "config": {
+                  "id": "isNotNull",
+                  "options": {}
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Custo",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Custo"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Chamadas"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tempo de API"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sessão"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Abrir no Raio-X",
+                    "url": "/d/claude-code-session/?var-session=${__data.fields.session_id}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

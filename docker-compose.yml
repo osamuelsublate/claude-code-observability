@@ -65,6 +65,14 @@ services:
       retries: 6
     restart: unless-stopped
 
+  session-titles:
+    image: python:${PYTHON_VERSION:?copie .env.example para .env}
+    command: ["python", "-I", "/app/session_titles.py"]
+    volumes:
+      - ./session-titles/session_titles.py:/app/session_titles.py:ro
+      - ${CLAUDE_PROJECTS_DIR:-~/.claude/projects}:/claude-projects:ro
+    restart: unless-stopped
+
   proxy:
     image: caddy:${CADDY_VERSION:?copie .env.example para .env}
     volumes:

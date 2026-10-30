@@ -31,12 +31,13 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
+        "hide": 0,
         "query": {
-          "query": "label_values(claude_code_session_count_total, project_name)",
+          "query": "label_values(claude_code_session_info, project_dir)",
           "refId": "v",
           "qryType": 1
         },
-        "definition": "label_values(claude_code_session_count_total, project_name)",
+        "definition": "label_values(claude_code_session_info, project_dir)",
         "refresh": 2,
         "sort": 1,
         "multi": false,
@@ -55,16 +56,18 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
+        "hide": 0,
         "query": {
-          "query": "label_values(claude_code_session_count_total{project_name=~\"$project\"}, session_id)",
+          "query": "claude_code_session_info{project_dir=~\"$project\"}",
           "refId": "v",
-          "qryType": 1
+          "qryType": 3
         },
-        "definition": "label_values(claude_code_session_count_total{project_name=~\"$project\"}, session_id)",
+        "definition": "claude_code_session_info{project_dir=~\"$project\"}",
         "refresh": 2,
-        "sort": 1,
+        "sort": 2,
         "multi": false,
-        "current": {}
+        "current": {},
+        "regex": "/display=\"(?<text>[^\"]+)\".*session_id=\"(?<value>[^\"]+)\"/"
       }
     ]
   },

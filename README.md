@@ -17,6 +17,7 @@ O Claude Code exporta telemetria nativamente via OpenTelemetry. Este projeto re�
 ```text
 Claude Code → OTel Collector → Prometheus (métricas) → Grafana
                              → Loki (eventos)        →
+~/.claude/projects → session-titles → Prometheus (nomes) →
 ```
 
 | Serviço | Função |
@@ -25,6 +26,8 @@ Claude Code → OTel Collector → Prometheus (métricas) → Grafana
 | Prometheus | Armazena as métricas: tokens, custo e tempo ativo |
 | Loki | Armazena os eventos: duração por chamada à API e por ferramenta |
 | Grafana | Exibe os dashboards |
+| session-titles | Lê o nome e a pasta de cada sessão local e os expõe ao Prometheus |
+| Caddy | Atende <http://claude-grafana.localhost> na porta 80 |
 
 ## Como usar
 
@@ -43,17 +46,11 @@ Para usar só `claude-grafana/` no navegador, adicione ao arquivo `hosts` do sis
 
 Depois, copie o bloco `env` de [`claude-code/settings.example.json`](claude-code/settings.example.json) para o `~/.claude/settings.json`. A telemetria passa a valer nas novas sessões.
 
-### Identificar o projeto
+### Nome da sessão e projeto
 
-Para separar os dados por projeto, adicione ao `.claude/settings.json` de cada repositório:
+A telemetria só traz o ID da sessão. O nome que o Claude Code dá à conversa e a pasta do projeto ficam nos arquivos de sessão em `~/.claude/projects`, e o serviço `session-titles` lê só esses dois dados de cada arquivo e os expõe ao Prometheus. O conteúdo das conversas não é lido.
 
-```json
-{
-  "env": {
-    "OTEL_RESOURCE_ATTRIBUTES": "project_name=meu-projeto"
-  }
-}
-```
+Com isso, o filtro de projeto e o nome das sessões funcionam sem nenhuma configuração extra. Se o Claude Code guardar as sessões em outra pasta, ajuste `CLAUDE_PROJECTS_DIR` no `.env`.
 
 ### Medir o custo de uma implementação
 
@@ -65,6 +62,9 @@ Abra uma sessão nova para cada implementação. O custo dela é o total daquela
 | --- | --- | --- |
 | Visão geral | O que está acontecendo agora? | Projeto e modelo |
 | Raio-X da sessão | O que aconteceu nesta sessão e quanto custou cada mensagem? | Projeto e sessão |
+| Comparação de sessões | Quais sessões custaram mais, em custo, tokens e tempo? | Projeto e sessões |
+
+Na comparação, cada sessão vira uma barra nos mesmos gráficos. Como as sessões acontecem em horários diferentes, a tela compara totais, não a evolução no tempo.
 
 Custo e tokens vêm dos eventos `api_request` no Loki, e não dos contadores do Prometheus. Cada sessão cria séries novas, e `increase()` ignora o primeiro valor de uma série, então sessões curtas apareceriam com custo zero.
 
