@@ -33,7 +33,13 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Troque a senha no `.env` antes de subir. O Grafana fica em <http://localhost:3300>, com o usuário `admin`.
+Troque a senha no `.env` antes de subir. O Grafana fica em <http://claude-grafana.localhost> e em <http://localhost:3300>, sem tela de login: quem acessa entra como administrador. Por isso, não publique as portas fora de `127.0.0.1`.
+
+Para usar só `claude-grafana/` no navegador, adicione ao arquivo `hosts` do sistema (no Windows, `C:\Windows\System32\drivers\etc\hosts`, como administrador):
+
+```text
+127.0.0.1 claude-grafana
+```
 
 Depois, copie o bloco `env` de [`claude-code/settings.example.json`](claude-code/settings.example.json) para o `~/.claude/settings.json`. A telemetria passa a valer nas novas sessões.
 

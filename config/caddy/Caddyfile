@@ -1,0 +1,8 @@
+{
+	auto_https off
+	admin off
+}
+
+http://claude-grafana, http://claude-grafana.localhost {
+	reverse_proxy grafana:3000
+}
